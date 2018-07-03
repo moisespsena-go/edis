@@ -1,5 +1,5 @@
 # go-edis
-Go Lang Event Dispatcher API &amp; Implemetation
+Go Lang Simples Event Dispatcher API and Implemetation
 
 ## Installation
 
@@ -45,14 +45,27 @@ func main() {
 		return nil
 	})
 
-	ed.Trigger(edis.NewEvent("event", "data"))
-	ed.Trigger(edis.NewEvent("a:b:c", "abc"))
+	trigger := func() {
+		ed.Trigger(edis.NewEvent("event", "data"))
+		ed.Trigger(edis.NewEvent("a:b:c", "abc"))
+	}
+
+	fmt.Println("----- any trigger disabled -----")
+	trigger()
+	
+	fmt.Println("----- any trigger enabled -----")
+	ed.EnableAnyTrigger()
+	trigger()
 }
 ```
 
 Result:
 
 ```
+----- any trigger disabled -----
+1 -> event  Event{Name="event", CurrentName="event", data=data}
+4 -> a:b:c  Event{Name="a:b:c", CurrentName="a:b:c", data=abc}
+----- any trigger enabled -----
 0 -> *      Event{Name="event", CurrentName="*", data=data}
 1 -> event  Event{Name="event", CurrentName="event", data=data}
 0 -> *      Event{Name="a:b:c", CurrentName="*", data=abc}

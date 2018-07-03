@@ -11,14 +11,35 @@ import (
 type EventDispatcherInterface interface {
 	On(eventName string, callbacks ...func(e EventInterface) error)
 	Trigger(e EventInterface) error
+	IsAnyTrigger() bool
+	SetAnyTrigger(v bool)
+	EnableAnyTrigger()
+	DisableAnyTrigger()
 }
 
 type EventDispatcher struct {
-	listeners map[string]*orderedmap.OrderedMap
+	listeners  map[string]*orderedmap.OrderedMap
+	anyTrigger bool
 }
 
 func New() *EventDispatcher {
 	return &EventDispatcher{}
+}
+
+func (ed *EventDispatcher) IsAnyTrigger() bool {
+	return ed.anyTrigger
+}
+
+func (ed *EventDispatcher) SetAnyTrigger(v bool) {
+	ed.anyTrigger = v
+}
+
+func (ed *EventDispatcher) EnableAnyTrigger() {
+	ed.anyTrigger = true
+}
+
+func (ed *EventDispatcher) DisableAnyTrigger() {
+	ed.anyTrigger = false
 }
 
 func (ed *EventDispatcher) On(eventName string, callbacks ...func(e EventInterface) error) {
@@ -39,22 +60,23 @@ func (ed *EventDispatcher) On(eventName string, callbacks ...func(e EventInterfa
 }
 
 func (ed *EventDispatcher) Trigger(e EventInterface) (err error) {
-	if err = ed.trigger("*", e); err != nil {
-		return
-	}
-
-	parts := strings.Split(e.Name(), ":")
-	for i, key := range parts[0 : len(parts)-1] {
-		key = strings.Join(parts[0:i], ":")+":"+key+":*"
-		if key[0] == ':' {
-			key = key[1:]
-		}
-		err = ed.trigger(key, e)
-		if err != nil {
+	if ed.anyTrigger {
+		if err = ed.trigger("*", e); err != nil {
 			return
 		}
-	}
 
+		parts := strings.Split(e.Name(), ":")
+		for i, key := range parts[0 : len(parts)-1] {
+			key = strings.Join(parts[0:i], ":") + ":" + key + ":*"
+			if key[0] == ':' {
+				key = key[1:]
+			}
+			err = ed.trigger(key, e)
+			if err != nil {
+				return
+			}
+		}
+	}
 	return ed.trigger(e.Name(), e)
 }
 
