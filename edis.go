@@ -56,19 +56,22 @@ func (ed *EventDispatcher) On(eventName string, callbacks ...interface{}) error 
 	}
 	var (
 		ptr uintptr
-		ci CallbackInterface
-		f func(e EventInterface) error
+		ci  CallbackInterface
+		fe  func(e EventInterface) error
+		f   func(e EventInterface)
 	)
 	for _, cb := range callbacks {
 		if ci, ok = cb.(CallbackInterface); ok {
-		} else if f, ok = cb.(func(e EventInterface) error); ok {
+		} else if fe, ok = cb.(func(e EventInterface) error); ok {
+			ci = CallbackFuncE(fe)
+		} else if f, ok = cb.(func(e EventInterface)); ok {
 			ci = CallbackFunc(f)
 		} else {
 			return fmt.Errorf("Invalid Callback type %s", cb)
 		}
-		if ciPtr, ok := ci.(interface{Pointer()uintptr}); ok {
+		if ciPtr, ok := ci.(interface{ Pointer() uintptr }); ok {
 			ptr = ciPtr.Pointer()
-		} else if ciPtr, ok := ci.(interface{PointerOf()interface{}}); ok {
+		} else if ciPtr, ok := ci.(interface{ PointerOf() interface{} }); ok {
 			ptr = reflect.ValueOf(ciPtr.PointerOf()).Pointer()
 		} else {
 			ptr = reflect.ValueOf(ci).Pointer()
