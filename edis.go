@@ -11,7 +11,8 @@ import (
 )
 
 type EventDispatcherInterface interface {
-	On(eventName string, callbacks ...interface{}) error
+	On(eventName string, callbacks ...interface{})
+	OnE(eventName string, callbacks ...interface{}) error
 	Trigger(e EventInterface) error
 	IsAnyTrigger() bool
 	SetAnyTrigger(v bool)
@@ -45,7 +46,13 @@ func (ed *EventDispatcher) DisableAnyTrigger() {
 	ed.anyTrigger = false
 }
 
-func (ed *EventDispatcher) On(eventName string, callbacks ...interface{}) error {
+func (ed *EventDispatcher) On(eventName string, callbacks ...interface{}) {
+	if err := ed.OnE(eventName, callbacks...); err != nil {
+		panic(err)
+	}
+}
+
+func (ed *EventDispatcher) OnE(eventName string, callbacks ...interface{}) error {
 	if ed.listeners == nil {
 		ed.listeners = make(map[string]*orderedmap.OrderedMap)
 	}
@@ -57,25 +64,28 @@ func (ed *EventDispatcher) On(eventName string, callbacks ...interface{}) error 
 	var (
 		ptr uintptr
 		ci  CallbackInterface
-		fe  func(e EventInterface) error
-		f   func(e EventInterface)
 	)
 	for _, cb := range callbacks {
-		if ci, ok = cb.(CallbackInterface); ok {
-		} else if fe, ok = cb.(func(e EventInterface) error); ok {
-			ci = CallbackFuncE(fe)
-		} else if f, ok = cb.(func(e EventInterface)); ok {
-			ci = CallbackFunc(f)
-		} else {
+		switch ct := cb.(type) {
+		case CallbackInterface:
+			ci = ct
+		case func(e EventInterface) error:
+			ci = CallbackFuncE(ct)
+		case func(e EventInterface):
+			ci = CallbackFunc(ct)
+		default:
 			return fmt.Errorf("Invalid Callback type %s", cb)
 		}
-		if ciPtr, ok := ci.(interface{ Pointer() uintptr }); ok {
+
+		switch ciPtr := cb.(type) {
+		case interface{ Pointer() uintptr }:
 			ptr = ciPtr.Pointer()
-		} else if ciPtr, ok := ci.(interface{ PointerOf() interface{} }); ok {
+		case interface{ PointerOf() interface{} }:
 			ptr = reflect.ValueOf(ciPtr.PointerOf()).Pointer()
-		} else {
+		default:
 			ptr = reflect.ValueOf(ci).Pointer()
 		}
+
 		if !m.Has(ptr) {
 			m.Set(ptr, ci)
 		}
@@ -111,10 +121,12 @@ func (ed *EventDispatcher) Listeners(key string) (lis *orderedmap.OrderedMap, ok
 
 func (ed *EventDispatcher) trigger(key string, e EventInterface) (err error) {
 	oldName := e.CurrentName()
-	defer func() {
-		e.SetCurrentName(oldName)
-	}()
-	e.SetCurrentName(key)
+	if oldName != key {
+		defer func() {
+			e.SetCurrentName(oldName)
+		}()
+		e.SetCurrentName(key)
+	}
 	if m, ok := ed.listeners[key]; ok {
 		err = m.EachValues(func(value interface{}) error {
 			return value.(CallbackInterface).Call(e)

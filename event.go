@@ -4,14 +4,18 @@ import "fmt"
 
 type EventInterface interface {
 	Name() string
+	SetData(value interface{})
 	Data() interface{}
 	SetResult(value interface{})
 	Result() interface{}
 	SetError(err error)
 	Error() error
+	SetParent(parent EventInterface)
 	Parent() EventInterface
 	CurrentName() string
 	SetCurrentName(value string)
+	Dispatcher() EventDispatcherInterface
+	SetDispatcher(dis EventDispatcherInterface)
 }
 
 type Event struct {
@@ -21,6 +25,7 @@ type Event struct {
 	PError       error
 	PParent      EventInterface
 	PCurrentName string
+	PDispatcher  EventDispatcherInterface
 }
 
 func NewEvent(name string, data ...interface{}) *Event {
@@ -47,7 +52,14 @@ func (d *Event) SetCurrentName(value string) {
 }
 
 func (d *Event) Name() string {
+	if d.PName == "" && d.PParent != nil {
+		return d.PParent.Name()
+	}
 	return d.PName
+}
+
+func (d *Event) SetData(value interface{}) {
+	d.PData = value
 }
 
 func (d *Event) Data() interface{} {
@@ -78,4 +90,23 @@ func (d *Event) Error() error {
 
 func (d *Event) Parent() EventInterface {
 	return d.PParent
+}
+
+func (d *Event) SetParent(parent EventInterface) {
+	d.PParent = parent
+}
+
+func (d *Event) Dispatcher() EventDispatcherInterface {
+	return d.PDispatcher
+}
+
+func (d *Event) SetDispatcher(dis EventDispatcherInterface) {
+	d.PDispatcher = dis
+}
+
+func EAll(name string) string {
+	if name == "" {
+		panic("Name is empty")
+	}
+	return name + ":*"
 }
