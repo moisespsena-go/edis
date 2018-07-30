@@ -1,6 +1,6 @@
 package edis
 
-type CallbackInterface interface {
+type Callback interface {
 	Call(e EventInterface) error
 }
 

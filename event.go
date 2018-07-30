@@ -4,26 +4,25 @@ import "fmt"
 
 type EventInterface interface {
 	Name() string
+	Names() []string
 	SetData(value interface{})
 	Data() interface{}
 	SetResult(value interface{})
 	Result() interface{}
 	SetError(err error)
 	Error() error
-	SetParent(parent EventInterface)
-	Parent() EventInterface
-	CurrentName() string
-	SetCurrentName(value string)
 	Dispatcher() EventDispatcherInterface
 	SetDispatcher(dis EventDispatcherInterface)
+	With(name string) (done func())
+	WithDispatcher(dis EventDispatcherInterface) (done func())
 }
 
 type Event struct {
+	names        []string
 	PName        string
 	PData        interface{}
 	PResult      interface{}
 	PError       error
-	PParent      EventInterface
 	PCurrentName string
 	PDispatcher  EventDispatcherInterface
 }
@@ -40,21 +39,11 @@ func (e *Event) String() string {
 	return fmt.Sprintf("Event{Name=%q, CurrentName=%q, data=%v}", e.PName, e.PCurrentName, e.PData)
 }
 
-func (d *Event) CurrentName() string {
-	if d.PCurrentName == "" {
-		return d.PName
-	}
-	return d.PCurrentName
-}
-
-func (d *Event) SetCurrentName(value string) {
-	d.PCurrentName = value
+func (e *Event) Names() []string {
+	return e.names
 }
 
 func (d *Event) Name() string {
-	if d.PName == "" && d.PParent != nil {
-		return d.PParent.Name()
-	}
 	return d.PName
 }
 
@@ -68,9 +57,6 @@ func (d *Event) Data() interface{} {
 
 func (d *Event) SetResult(value interface{}) {
 	d.PResult = value
-	if d.PParent != nil {
-		d.PParent.SetResult(value)
-	}
 }
 
 func (d *Event) Result() interface{} {
@@ -79,21 +65,10 @@ func (d *Event) Result() interface{} {
 
 func (d *Event) SetError(err error) {
 	d.PError = err
-	if d.PParent != nil {
-		d.PParent.SetError(err)
-	}
 }
 
 func (d *Event) Error() error {
 	return d.PError
-}
-
-func (d *Event) Parent() EventInterface {
-	return d.PParent
-}
-
-func (d *Event) SetParent(parent EventInterface) {
-	d.PParent = parent
 }
 
 func (d *Event) Dispatcher() EventDispatcherInterface {
@@ -102,6 +77,24 @@ func (d *Event) Dispatcher() EventDispatcherInterface {
 
 func (d *Event) SetDispatcher(dis EventDispatcherInterface) {
 	d.PDispatcher = dis
+}
+
+func (e *Event) With(name string) (done func()) {
+	oldName := e.PName
+	e.names = append(e.names, e.PName)
+	e.PName = name
+	return func() {
+		e.names = e.names[:len(e.names)-1]
+		e.PName = oldName
+	}
+}
+
+func (e *Event) WithDispatcher(dis EventDispatcherInterface) (done func()) {
+	old := e.PDispatcher
+	e.PDispatcher = dis
+	return func() {
+		e.PDispatcher = old
+	}
 }
 
 func EAll(name string) string {
