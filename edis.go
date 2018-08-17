@@ -121,6 +121,10 @@ func (ed *EventDispatcher) OnE(eventName string, callbacks ...interface{}) error
 	return nil
 }
 
+func (ed *EventDispatcher) GetDefinedDispatcher() EventDispatcherInterface {
+	return ed.dispatcher
+}
+
 func (ed *EventDispatcher) Dispatcher() EventDispatcherInterface {
 	if ed.dispatcher == nil {
 		return ed
