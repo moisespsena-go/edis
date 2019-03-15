@@ -111,6 +111,10 @@ func (ed *EventDispatcher) OnE(eventName string, callbacks ...interface{}) error
 			ci = CallbackFuncE(ct)
 		case func(e EventInterface):
 			ci = CallbackFunc(ct)
+		case func():
+			ci = SimpleCallback(ct)
+		case func() error:
+			ci = SimpleCallbackE(ct)
 		default:
 			return fmt.Errorf("Invalid Callback type %s", cb)
 		}

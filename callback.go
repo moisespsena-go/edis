@@ -16,3 +16,15 @@ func (c CallbackFunc) Call(e EventInterface) error {
 	c(e)
 	return nil
 }
+
+func SimpleCallback(f func()) Callback {
+	return CallbackFunc(func(e EventInterface) {
+		f()
+	})
+}
+
+func SimpleCallbackE(f func() error) Callback {
+	return CallbackFuncE(func(e EventInterface) error {
+		return f()
+	})
+}
