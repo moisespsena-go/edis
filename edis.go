@@ -5,7 +5,7 @@ import (
 
 	"fmt"
 
-	"github.com/moisespsena/go-error-wrap"
+	"github.com/moisespsena-go/error-wrap"
 	"github.com/op/go-logging"
 )
 
