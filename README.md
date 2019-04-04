@@ -4,7 +4,7 @@ Go Lang Simples Event Dispatcher API and Implemetation
 ## Installation
 
 ```bash
-go get -u github.com/moisespsena/go-edis
+go get -u github.com/moisespsena-go/edis
 ```
 
 ## Usage
@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/moisespsena/go-edis"
+	"github.com/moisespsena-go/edis"
 )
 
 func main() {
