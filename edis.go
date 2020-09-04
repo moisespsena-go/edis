@@ -5,8 +5,7 @@ import (
 
 	"fmt"
 
-	"github.com/moisespsena-go/error-wrap"
-	"github.com/op/go-logging"
+	"github.com/moisespsena-go/logging"
 )
 
 type EventDispatcherInterface interface {
@@ -19,8 +18,8 @@ type EventDispatcherInterface interface {
 	DisableAnyTrigger()
 	Listeners(key string) (lis []Callback, ok bool)
 	AllListeners() map[string][]Callback
-	SetLogger(log *logging.Logger)
-	Logger() *logging.Logger
+	SetLogger(log logging.Logger)
+	Logger() logging.Logger
 	SetDebug(v bool)
 	IsDebugEnabled() bool
 	EnableDebug()
@@ -33,7 +32,7 @@ type EventDispatcher struct {
 	dispatcher EventDispatcherInterface
 	listeners  map[string][]Callback
 	anyTrigger bool
-	log        *logging.Logger
+	log        logging.Logger
 	debug      bool
 	debugFunc  func(dis EventDispatcherInterface, key string, e EventInterface)
 }
@@ -42,11 +41,11 @@ func New() *EventDispatcher {
 	return &EventDispatcher{}
 }
 
-func (ed *EventDispatcher) SetLogger(log *logging.Logger) {
+func (ed *EventDispatcher) SetLogger(log logging.Logger) {
 	ed.log = log
 }
 
-func (ed *EventDispatcher) Logger() *logging.Logger {
+func (ed *EventDispatcher) Logger() logging.Logger {
 	return ed.log
 }
 func (ed *EventDispatcher) IsDebugEnabled() bool {
@@ -178,10 +177,9 @@ func (ed *EventDispatcher) trigger(key string, e EventInterface) (err error) {
 	}
 	defer e.With(key)()
 	if m, ok := ed.listeners[key]; ok {
-		for i, cb := range m {
-			err = cb.Call(e)
-			if err != nil {
-				return errwrap.Wrap(err, "Trigger %q, callback %d", key, i)
+		for _, cb := range m {
+			if err = cb.Call(e); err != nil {
+				return
 			}
 		}
 	}
